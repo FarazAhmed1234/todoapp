@@ -1,0 +1,164 @@
+:root {
+  --bg: #0f1724;
+  --card: #0b1220;
+  --muted: #94a3b8;
+  --accent: #7c3aed;
+  --success: #10b981;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  background: linear-gradient(180deg, #071021 0%, #071b2a 100%);
+  color: #e6eef8;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px;
+}
+
+.app {
+  width: 100%;
+  max-width: 720px;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.card {
+  background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+  padding: 18px;
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(2,6,23,0.6);
+}
+
+.input-row {
+  display: flex;
+  gap: 8px;
+}
+
+input[type=text] {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.04);
+  background: transparent;
+  color: inherit;
+  font-size: 15px;
+}
+
+button {
+  background: var(--accent);
+  border: none;
+  padding: 10px 14px;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+}
+
+.controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.filters {
+  display: flex;
+  gap: 8px;
+}
+
+.filters button {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.04);
+  padding: 8px 10px;
+  border-radius: 8px;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.filters button.active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.list { margin-top: 16px; }
+
+.todo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.02);
+  margin-bottom: 8px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.01), transparent);
+}
+
+.todo-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.todo .label {
+  flex: 1;
+  word-break: break-word;
+}
+
+.todo.completed .label {
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+
+.todo input[type=checkbox] {
+  width: 18px;
+  height: 18px;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.meta {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.empty {
+  color: var(--muted);
+  padding: 18px;
+  text-align: center;
+}
+
+.clear-btn {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.04);
+  padding: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+@media (max-width: 520px) {
+  h1 { font-size: 18px; }
+  .input-row { flex-direction: column; }
+  button { width: 100%; }
+}
