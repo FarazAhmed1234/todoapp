@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Simple Todo App</title>
+  <style>
+    :root{--bg:#0f1724;--card:#0b1220;--muted:#94a3b8;--accent:#7c3aed;--success:#10b981}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;background:linear-gradient(180deg,#071021 0%, #071b2a 100%);color:#e6eef8;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:28px}
+    .app{width:100%;max-width:720px}
+    header{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+    h1{margin:0;font-size:20px}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));padding:18px;border-radius:12px;box-shadow:0 6px 18px rgba(2,6,23,0.6)}
+    .input-row{display:flex;gap:8px}
+    input[type=text]{flex:1;padding:10px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit;font-size:15px}
+    button{background:var(--accent);border:none;padding:10px 14px;border-radius:8px;color:white;cursor:pointer}
+    .controls{display:flex;justify-content:space-between;align-items:center;margin-top:12px;flex-wrap:wrap;gap:8px}
+    .filters{display:flex;gap:8px}
+    .filters button{background:transparent;border:1px solid rgba(255,255,255,0.04);padding:8px 10px;border-radius:8px;color:var(--muted);cursor:pointer}
+    .filters button.active{border-color:var(--accent);color:var(--accent)}
+    .list{margin-top:16px}
+    .todo{display:flex;gap:12px;align-items:center;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.02);margin-bottom:8px;background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent)}
+    .todo .label{flex:1;word-break:break-word}
+    .todo.completed .label{text-decoration:line-through;opacity:0.7}
+    .todo input[type=checkbox]{width:18px;height:18px}
+    .actions{display:flex;gap:8px}
+    .ghost{opacity:0.5}
+    .meta{display:flex;gap:10px;align-items:center;color:var(--muted);font-size:13px}
+    .empty{color:var(--muted);padding:18px;text-align:center}
+    @media (max-width:520px){h1{font-size:18px}.input-row{flex-direction:column}button{width:100%}}
+  </style>
+</head>
+<body>
+  <main class="app card">
+    <header>
+      <h1>Todo App</h1>
+      <div style="flex:1"></div>
+      <div class="meta">Local only • Autosaved</div>
+    </header>
+
+    <section>
+      <div class="input-row">
+        <input id="newTodo" type="text" placeholder="Add a new task and press Add or Enter" aria-label="New todo" />
+        <button id="addBtn">Add</button>
+      </div>
+
+      <div class="controls">
+        <div class="filters">
+          <button data-filter="all" class="active">All</button>
+          <button data-filter="active">Active</button>
+          <button data-filter="completed">Completed</button>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <div class="meta" id="count">0 items</div>
+          <button id="clearCompleted" style="background:transparent;border:1px solid rgba(255,255,255,0.04);padding:8px;border-radius:8px;cursor:pointer">Clear completed</button>
+        </div>
+      </div>
+
+      <div class="list" id="todoList" aria-live="polite"></div>
+
+      <div class="empty" id="emptyState" style="display:none">No tasks yet — add something to get started ✨</div>
+    </section>
+  </main>
+
+  <script>
+    // Simple Todo app with localStorage, edit, delete, toggle complete, filters
+    const STORAGE_KEY = 'simple_todo_v1';
+    const newTodo = document.getElementById('newTodo');
+    const addBtn = document.getElementById('addBtn');
+    const listEl = document.getElementById('todoList');
+    const countEl = document.getElementById('count');
+    const emptyState = document.getElementById('emptyState');
+    const clearCompletedBtn = document.getElementById('clearCompleted');
+    const filters = document.querySelectorAll('.filters button');
+
+    let todos = load();
+    let filter = 'all';
+
+    function save(){
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
+    }
+
+    function load(){
+      try{
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if(!raw) return [];
+        return JSON.parse(raw);
+      }catch(e){
+        console.error('Failed to load todos', e);
+        return [];
+      }
+    }
+
+    function uid(){return Date.now().toString(36) + Math.random().toString(36).slice(2,8)}
+
+    function render(){
+      listEl.innerHTML = '';
+      const visible = todos.filter(t => {
+        if(filter==='all') return true;
+        if(filter==='active') return !t.completed;
+        return t.completed;
+      });
+
+      if(visible.length===0){ emptyState.style.display = 'block'; } else { emptyState.style.display='none' }
+
+      visible.forEach(t => {
+        const item = document.createElement('div');
+        item.className = 'todo' + (t.completed ? ' completed' : '');
+        item.dataset.id = t.id;
+
+        const cb = document.createElement('input'); cb.type='checkbox'; cb.checked = !!t.completed;
+        cb.addEventListener('change', ()=>{ toggle(t.id); });
+
+        const label = document.createElement('div'); label.className='label'; label.textContent = t.text;
+        label.title = 'Double-click to edit';
+        label.tabIndex = 0;
+        // edit on double click
+        label.addEventListener('dblclick', ()=>{ startEdit(t.id, label); });
+        label.addEventListener('keydown', (e)=>{ if(e.key==='Enter') startEdit(t.id, label); });
+
+        const actions = document.createElement('div'); actions.className='actions';
+        const delBtn = document.createElement('button'); delBtn.textContent='Delete'; delBtn.style.background='transparent'; delBtn.style.border='none'; delBtn.style.cursor='pointer'; delBtn.addEventListener('click', ()=>{ remove(t.id); });
+
+        actions.appendChild(delBtn);
+        item.appendChild(cb);
+        item.appendChild(label);
+        item.appendChild(actions);
+        listEl.appendChild(item);
+      });
+
+      countEl.textContent = `${todos.filter(t=>!t.completed).length} active • ${todos.length} total`;
+      save();
+    }
+
+    function add(text){
+      const trimmed = (text||'').trim();
+      if(!trimmed) return;
+      todos.unshift({id:uid(), text:trimmed, completed:false, created:Date.now()});
+      newTodo.value='';
+      render();
+    }
+
+    function toggle(id){
+      todos = todos.map(t=> t.id===id ? {...t, completed: !t.completed} : t);
+      render();
+    }
+
+    function remove(id){
+      todos = todos.filter(t=>t.id!==id);
+      render();
+    }
+
+    function clearCompleted(){
+      todos = todos.filter(t=>!t.completed);
+      render();
+    }
+
+    function startEdit(id, labelEl){
+      const t = todos.find(x=>x.id===id);
+      if(!t) return;
+      const input = document.createElement('input');
+      input.type='text'; input.value = t.text; input.style.width='100%';
+      labelEl.replaceWith(input);
+      input.focus();
+      input.select();
+
+      function finish(saveEdit){
+        if(saveEdit){
+          const v = input.value.trim();
+          if(v) t.text = v;
+          else remove(id);
+        }
+        render();
+      }
+
+      input.addEventListener('blur', ()=> finish(true));
+      input.addEventListener('keydown', (e)=>{
+        if(e.key==='Enter') finish(true);
+        if(e.key==='Escape') finish(false);
+      });
+    }
+
+    // events
+    addBtn.addEventListener('click', ()=> add(newTodo.value));
+    newTodo.addEventListener('keydown', (e)=>{ if(e.key==='Enter') add(newTodo.value); });
+    clearCompletedBtn.addEventListener('click', clearCompleted);
+    filters.forEach(b=> b.addEventListener('click', ()=>{
+      filters.forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');
+      filter = b.dataset.filter;
+      render();
+    }));
+
+    // initial render
+    render();
+
+    // expose for debugging (optional)
+    window._todos = todos;
+  </script>
+</body>
+</html>
